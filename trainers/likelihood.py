@@ -15,11 +15,12 @@ class Likelihood:
     def __init__(self, model, opts, loss_type, dataset="", learning_rate=1e-3, tag=""):
 
         self.model = model
-
-        self.l = opts['l']
-        self.drop_prob = opts['drop_prob']
-        self.mse = not opts['sigma']
-        self.lam = opts['lam']
+        self.dataset = dataset
+        if "depth" == dataset:
+            self.l = opts['l']
+            self.drop_prob = opts['drop_prob']
+            self.mse = not opts['sigma']
+            self.lam = opts['lam']
 
         if "gaussian" == loss_type:
             self.loss_function = edl.losses.Gaussian_NLL
@@ -63,11 +64,14 @@ class Likelihood:
 
         rmse = edl.losses.RMSE(y, mu)
 	
-        ###################### Check this later
-        tau = self.l**2 * (1-self.drop_prob) / (2. * self.lam) # https://www.cs.ox.ac.uk/people/yarin.gal/website/blog_3d801aa532c1ce.html
-        var = tau**-1
-        nll = edl.losses.Gaussian_NLL(y, mu, tf.sqrt(var))
-        ###################### Check this later should we just give sigma directly?
+        if "depth" == self.dataset:
+            ###################### Check this later
+            tau = self.l**2 * (1-self.drop_prob) / (2. * self.lam) # https://www.cs.ox.ac.uk/people/yarin.gal/website/blog_3d801aa532c1ce.html
+            var = tau**-1
+            nll = edl.losses.Gaussian_NLL(y, mu, tf.sqrt(var))
+            ###################### Check this later should we just give sigma directly?
+        else:
+            nll = loss
 
         return mu, sigma**2, loss, rmse, nll
 
@@ -126,24 +130,25 @@ class Likelihood:
             x_ = x[idx,...]
             y_ = y[idx,...]
 
-            # Adding noise to labels
-            #idx_height = np.random.randint(1, y.shape[1], size=(batch_size,200))
-            #idx_width = np.random.randint(1, y.shape[2], size=(batch_size,200))
-            #y_[:, idx_height, idx_width] = 0
-            for i in range(10):
-                first_value_height = np.random.choice(y.shape[1]-20)
-                last_value_height = first_value_height + np.random.randint(1,20)
-                first_value_width = np.random.choice(y.shape[2]-20)
-                last_value_width = first_value_width + np.random.randint(1,20)
+            if "depth" == self.dataset:
+                # Adding noise to labels
+                #idx_height = np.random.randint(1, y.shape[1], size=(batch_size,200))
+                #idx_width = np.random.randint(1, y.shape[2], size=(batch_size,200))
+                #y_[:, idx_height, idx_width] = 0
+                for i in range(10):
+                    first_value_height = np.random.choice(y.shape[1]-20)
+                    last_value_height = first_value_height + np.random.randint(1,20)
+                    first_value_width = np.random.choice(y.shape[2]-20)
+                    last_value_width = first_value_width + np.random.randint(1,20)
+                    
+                    if (0 == i):
+                        idx_height = np.random.randint(first_value_height, last_value_height, size=(batch_size,20))
+                        idx_width = np.random.randint(first_value_width, last_value_width, size=(batch_size,20))
+                    else:
+                        idx_height = np.append( idx_height, np.random.randint(first_value_height, last_value_height, size=(batch_size,20)) , axis=1)
+                        idx_width = np.append( idx_width, np.random.randint(first_value_width, last_value_width, size=(batch_size,20)) , axis=1)
                 
-                if (0 == i):
-                    idx_height = np.random.randint(first_value_height, last_value_height, size=(batch_size,20))
-                    idx_width = np.random.randint(first_value_width, last_value_width, size=(batch_size,20))
-                else:
-                    idx_height = np.append( idx_height, np.random.randint(first_value_height, last_value_height, size=(batch_size,20)) , axis=1)
-                    idx_width = np.append( idx_width, np.random.randint(first_value_width, last_value_width, size=(batch_size,20)) , axis=1)
-            
-            y_[:, idx_height, idx_width] = 0
+                y_[:, idx_height, idx_width] = 0
 
             x_divisor = 255. if x_.dtype == np.uint8 else 1.0
             y_divisor = 255. if y_.dtype == np.uint8 else 1.0

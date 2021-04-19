@@ -22,6 +22,7 @@ def create(
         model = tf.keras.Model(inputs=inputs, outputs=output)
         return model
 
-    models = [create_model() for _ in range(num_ensembles)]
+    #models = [create_model() for _ in range(num_ensembles)]
+    models = create_model()
 
     return models, options
