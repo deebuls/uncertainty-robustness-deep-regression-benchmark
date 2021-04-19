@@ -59,7 +59,7 @@ def plot_ng(model, save="ng", ext=".pdf"):
     epistemic = np.minimum(epistemic, 1e3) # clip the unc for vis
     plot_scatter_with_var(mu, epistemic, path=save+ext, n_stds=3)
 
-def plot_laplace_likelihood(models, save="ensemble", ext=".pdf"):
+def plot_laplace_likelihood_ensemble(models, save="ensemble", ext=".pdf"):
     x_test_input = tf.convert_to_tensor(x_test, tf.float32)
     preds = tf.stack([model(x_test_input, training=False) for model in models], axis=0) #forward pass
     mus, sigmas = tf.split(preds, 2, axis=-1)
@@ -99,7 +99,7 @@ def plot_gaussian(model, save="gaussian", ext=".pdf"):
     x_test_input = tf.convert_to_tensor(x_test, tf.float32)
     preds = model(x_test_input, training=False) #forward pass
     mu, sigma = tf.split(preds, 2, axis=-1)
-    plot_scatter_with_var(mu, sigma, path=save+ext, n_stds=3)
+    plot_scatter_with_var(mu, sigma**2, path=save+ext, n_stds=3)
 
 
 
@@ -160,15 +160,23 @@ def ensemble_4_layers_100_neurons():
     model, rmse, nll = trainer.train(x_train, y_train, x_train, y_train, np.array([[1.]]), iters=iterations, batch_size=batch_size, verbose=True)
     plot_ensemble(model, os.path.join(save_fig_dir,"ensemble_4_layers_100_neurons"))
 
-def laplace_ensemble_4_layers_100_neurons():
+def laplace_ensemble_4_layers_100_neurons(): #This function will not work because trainer chagnes
     trainer_obj = trainers.Likelihood
     model_generator = models.get_correct_model(dataset="toy", trainer=trainer_obj)
     model, opts = model_generator.create(input_shape=1, num_neurons=100, num_layers=4)
-    trainer = trainer_obj(model, opts, learning_rate=5e-3)
+    trainer = trainer_obj(model, opts, "laplace", learning_rate=5e-3)
     model, rmse, nll = trainer.train(x_train, y_train, x_train, y_train, np.array([[1.]]), iters=iterations, batch_size=batch_size, verbose=True)
-    plot_laplace_likelihood(model, os.path.join(save_fig_dir,"likelihood_ensemble_4_layers_100_neurons"))
+    plot_laplace_likelihood_ensemble(model, os.path.join(save_fig_dir,"likelihood_4_layers_100_neurons"))
     
-
+def laplace_4_layers_100_neurons(): #This function will not work because trainer chagnes
+    trainer_obj = trainers.Likelihood
+    model_generator = models.get_correct_model(dataset="toy", trainer=trainer_obj)
+    model, opts = model_generator.create(input_shape=1, num_neurons=100, num_layers=4)
+    trainer = trainer_obj(model, opts, "laplace", learning_rate=5e-3)
+    print (x_train.shape)
+    model, rmse, nll = trainer.train(x_train, y_train, x_train, y_train, np.array([[1.]]), iters=iterations, batch_size=batch_size, verbose=True)
+    plot_gaussian(model, os.path.join(save_fig_dir,"laplace_4_layers_100_neurons"))
+    
 def gaussian_4_layers_100_neurons():
     trainer_obj = trainers.Gaussian
     model_generator = models.get_correct_model(dataset="toy", trainer=trainer_obj)
@@ -207,6 +215,8 @@ if __name__ == "__main__":
     #gaussian_4_layers_100_neurons()
     #dropout_4_layers_100_neurons()
     #bbbp_4_layers_100_neurons()
-    laplace_ensemble_4_layers_100_neurons()
+    #laplace_ensemble_4_layers_100_neurons()
+    laplace_4_layers_100_neurons()
+    gaussian_4_layers_100_neurons()
 
     print(f"Done! Figures saved to {save_fig_dir}")
