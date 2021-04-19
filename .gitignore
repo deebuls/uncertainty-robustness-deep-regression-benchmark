@@ -1,3 +1,11 @@
+#Folders
+figs/*
+logs/*
+save/*
+pretrained_models/*
+data/*
+noisy_pretrained_models/*
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
