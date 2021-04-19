@@ -172,11 +172,20 @@ def laplace_4_layers_100_neurons(): #This function will not work because trainer
     trainer_obj = trainers.Likelihood
     model_generator = models.get_correct_model(dataset="toy", trainer=trainer_obj)
     model, opts = model_generator.create(input_shape=1, num_neurons=100, num_layers=4)
-    trainer = trainer_obj(model, opts, "laplace", learning_rate=5e-3)
+    trainer = trainer_obj(model, opts, "laplace", dataset="toy", learning_rate=5e-4)
     print (x_train.shape)
     model, rmse, nll = trainer.train(x_train, y_train, x_train, y_train, np.array([[1.]]), iters=iterations, batch_size=batch_size, verbose=True)
     plot_gaussian(model, os.path.join(save_fig_dir,"laplace_4_layers_100_neurons"))
-    
+
+def gaussian_4_layers_100_neurons(): #This function will not work because trainer chagnes
+    trainer_obj = trainers.Likelihood
+    model_generator = models.get_correct_model(dataset="toy", trainer=trainer_obj)
+    model, opts = model_generator.create(input_shape=1, num_neurons=100, num_layers=4)
+    trainer = trainer_obj(model, opts, "gaussian", dataset="toy",learning_rate=5e-4)
+    print (x_train.shape)
+    model, rmse, nll = trainer.train(x_train, y_train, x_train, y_train, np.array([[1.]]), iters=iterations, batch_size=batch_size, verbose=True)
+    plot_gaussian(model, os.path.join(save_fig_dir,"laplace_4_layers_100_neurons"))
+'''    
 def gaussian_4_layers_100_neurons():
     trainer_obj = trainers.Gaussian
     model_generator = models.get_correct_model(dataset="toy", trainer=trainer_obj)
@@ -184,6 +193,7 @@ def gaussian_4_layers_100_neurons():
     trainer = trainer_obj(model, opts, learning_rate=5e-3)
     model, rmse, nll = trainer.train(x_train, y_train, x_train, y_train, np.array([[1.]]), iters=iterations, batch_size=batch_size, verbose=True)
     plot_gaussian(model, os.path.join(save_fig_dir,"gaussian_4_layers_100_neurons"))
+'''    
 
 def dropout_4_layers_100_neurons():
     trainer_obj = trainers.Dropout
