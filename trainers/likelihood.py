@@ -23,7 +23,7 @@ class Likelihood:
             self.lam = opts['lam']
 
         if "gaussian" == loss_type:
-            self.loss_function = edl.losses.Gaussian_NLL
+            self.loss_function = nll.losses.gaussian_nll_loss
         elif "laplace" == loss_type:
             self.loss_function = nll.losses.laplace_nll_loss
         elif "mse" == loss_type:
@@ -46,21 +46,23 @@ class Likelihood:
         self.val_summary_writer = tf.summary.create_file_writer(val_log_dir)
 
 
+    @tf.function
     def run_train_step(self, x, y):
         with tf.GradientTape() as tape:
             y_hat = self.model(x, training=True) #forward pass
-            mu, sigma = tf.split(y_hat, 2, axis=-1)
-            loss = self.loss_function(y, mu, sigma)
+            mu, var = tf.split(y_hat, 2, axis=-1)
+            loss = self.loss_function(y, mu, var)
 
         grads = tape.gradient(loss, self.model.variables) #compute gradient
         self.optimizer.apply_gradients(zip(grads, self.model.variables))
 
         return loss, y_hat
 
+    @tf.function
     def evaluate(self, x, y):
         pred = self.model(x, training=False) #forward pass
-        mu, sigma = tf.split(pred, 2, axis=-1)
-        loss = self.loss_function(y, mu, sigma)
+        mu, var = tf.split(pred, 2, axis=-1)
+        loss = self.loss_function(y, mu, var)
 
         rmse = edl.losses.RMSE(y, mu)
 	
@@ -73,7 +75,7 @@ class Likelihood:
         else:
             nll = loss
 
-        return mu, sigma**2, loss, rmse, nll
+        return mu, var, loss, rmse, nll
 
     def save_train_summary(self, loss, x, y, y_hat):
         with self.train_summary_writer.as_default():
