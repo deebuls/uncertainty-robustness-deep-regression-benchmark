@@ -1,7 +1,7 @@
 import tensorflow as tf
 import numpy as np
 
-def gaussian_nll_loss(input, target, var, reduction='mean')
+def gaussian_nll_loss(input, target, var, reduction='mean'):
     '''
     Gaussian loss with variance as input (not sigma)
     It returns without the constant term in the loss
@@ -13,9 +13,9 @@ def gaussian_nll_loss(input, target, var, reduction='mean')
         raise ValueError(reduction + "is not valid" )
 
     #Entries of scale must be non negative
-    tf.debugging.assert_non_negative(
-        var, message="variance has negative numbers", summarize="have you missed to make variance positive with softplus", name=None  
-    )
+    #tf.debugging.assert_non_negative(
+    #    var, message="variance has negative numbers", summarize="have you missed to make variance positive with softplus", name=None  
+    #)
 
     per_pixel_loss = 0.5*tf.math.log(var) + ((input - target)**2)/var
     loss = tf.reduce_mean(per_pixel_loss, axis=ax)
@@ -40,9 +40,9 @@ def laplace_nll_loss(input, target, scale, eps=1e-06, reduction='mean'):
         raise ValueError(reduction + "is not valid" )
 
     #Entries of scale must be non negative
-    tf.debugging.assert_non_negative(
-        scale, message="variance has negative numbers", summarize="have you missed to make variance positive with softplus", name=None  
-    )
+    #tf.debugging.assert_non_negative(
+    #    scale, message="variance has negative numbers", summarize="have you missed to make variance positive with softplus", name=None  
+    #)
 
     per_pixel_loss = (tf.math.log(2*scale) + tf.abs(input - target)/scale)
     loss = tf.reduce_mean(per_pixel_loss, axis=ax)

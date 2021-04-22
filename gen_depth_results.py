@@ -28,6 +28,9 @@ class Model(Enum):
     Dropout = "Dropout"
     Ensemble = "Ensemble"
     Evidential = "Evidential"
+    Gaussian = "Gaussian"
+    Laplace = "Laplace"
+
 
 save_dir = "noisy_pretrained_models"
 trained_models = {
@@ -45,6 +48,16 @@ trained_models = {
         "evidence/trial1.h5",
         "evidence/trial2.h5",
         "evidence/trial3.h5",
+    ],
+    Model.Gaussian: [
+        "gaussian/trial1.h5",
+        "gaussian/trial2.h5",
+        "gaussian/trial3.h5",
+    ],
+    Model.Laplace: [
+        "laplace/trial1.h5",
+        "laplace/trial2.h5",
+        "laplace/trial3.h5",
     ],
 }
 output_dir = "figs/depth"
@@ -320,7 +333,11 @@ def gen_ood_comparison(df_image, unc_key="Entropy"):
     df = df_image[df_image["Epsilon"]==0.0] # Remove adversarial noise experiments
     # df = df.iloc[::5]
     df_pixel = df_image_to_pixels(df, keys=["Target", "Mu", "Sigma", "OOD"])
+    print ("sigma inf count :",np.sum(np.isinf(df_pixel['Sigma'])))
+    inf_id = df_pixel[df_pixel.isin([np.nan, np.inf, -np.inf]).any(1)]
+    print (inf_id.head())
     df_pixel["Entropy"] = 0.5*np.log(2*np.pi*np.exp(1.)*(df_pixel["Sigma"]**2))
+    print ("Entropy inf count :",np.sum(np.isinf(df_pixel['Entropy'])))
 
     df_by_method = df_pixel.groupby(["Method","Model Path", "OOD"])
     df_by_image = df_pixel.groupby([df_pixel.index, "Method","Model Path", "OOD"])
@@ -433,7 +450,7 @@ def predict(method, model, x, n_samples=10):
     elif method == Model.Evidential:
         outputs = model(x, training=False)
         mu, v, alpha, beta = tf.split(outputs, 4, axis=-1)
-        sigma = tf.sqrt(beta/(v*(alpha-1)))
+        sigma = tf.sqrt(beta/(v*(alpha + 1e-6 - 1)))
         return mu, sigma
 
     elif method == Model.Ensemble:
@@ -444,6 +461,18 @@ def predict(method, model, x, n_samples=10):
         preds = tf.stack([f(x) for f in model], axis=0)
         mu, var = tf.nn.moments(preds, 0)
         return mu, tf.sqrt(var)
+
+    elif method == Model.Gaussian:
+        outputs = model(x, training=False)
+        mu,  var = tf.split(outputs, 2, axis=-1)
+        return mu, tf.sqrt(var)
+
+    elif method == Model.Laplace:
+        outputs = model(x, training=False)
+        mu,  b = tf.split(outputs, 2, axis=-1)
+        return mu, b
+        
+    
 
     else:
         raise ValueError("Unknown model")
@@ -491,8 +520,8 @@ else:
 
 """ ================================================== """
 Path(output_dir).mkdir(parents=True, exist_ok=True)
-gen_cutoff_plot(df_image)
-gen_calibration_plot(df_image)
-gen_adv_plots(df_image)
+#gen_cutoff_plot(df_image)
+#gen_calibration_plot(df_image)
+#gen_adv_plots(df_image)
 gen_ood_comparison(df_image)
 """ ================================================== """
