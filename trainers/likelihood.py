@@ -37,12 +37,12 @@ class Likelihood:
 
         trainer = self.__class__.__name__
         current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-        self.save_dir = os.path.join('save','{}_{}_{}_{}'.format(current_time, dataset, loss_type, tag))
+        self.save_dir = os.path.join('save','{}_{}_{}_{}_{}'.format(current_time, dataset, loss_type, learning_rate, tag))
         Path(self.save_dir).mkdir(parents=True, exist_ok=True)
 
-        train_log_dir = os.path.join('logs', '{}_{}_{}_{}_train'.format(current_time, dataset, loss_type, tag))
+        train_log_dir = os.path.join('logs', '{}_{}_{}_{}_{}_train'.format(current_time, dataset, loss_type,learning_rate, tag))
         self.train_summary_writer = tf.summary.create_file_writer(train_log_dir)
-        val_log_dir = os.path.join('logs', '{}_{}_{}_{}_val'.format(current_time, dataset, loss_type, tag))
+        val_log_dir = os.path.join('logs', '{}_{}_{}_{}_{}_val'.format(current_time, dataset, loss_type,learning_rate, tag))
         self.val_summary_writer = tf.summary.create_file_writer(val_log_dir)
 
 
@@ -51,7 +51,7 @@ class Likelihood:
         with tf.GradientTape() as tape:
             y_hat = self.model(x, training=True) #forward pass
             mu, var = tf.split(y_hat, 2, axis=-1)
-            loss = self.loss_function(y, mu, var)
+            loss = self.loss_function(mu, y, var)
 
         grads = tape.gradient(loss, self.model.variables) #compute gradient
         self.optimizer.apply_gradients(zip(grads, self.model.variables))
@@ -62,16 +62,17 @@ class Likelihood:
     def evaluate(self, x, y):
         pred = self.model(x, training=False) #forward pass
         mu, var = tf.split(pred, 2, axis=-1)
-        loss = self.loss_function(y, mu, var)
+        loss = self.loss_function(mu, y, var)
 
         rmse = edl.losses.RMSE(y, mu)
 	
         if "depth" == self.dataset:
             ###################### Check this later
-            tau = self.l**2 * (1-self.drop_prob) / (2. * self.lam) # https://www.cs.ox.ac.uk/people/yarin.gal/website/blog_3d801aa532c1ce.html
-            var = tau**-1
-            nll = edl.losses.Gaussian_NLL(y, mu, tf.sqrt(var))
+            #tau = self.l**2 * (1-self.drop_prob) / (2. * self.lam) # https://www.cs.ox.ac.uk/people/yarin.gal/website/blog_3d801aa532c1ce.html
+            #var = tau**-1
+            #nll = edl.losses.Gaussian_NLL(y, mu, tf.sqrt(var))
             ###################### Check this later should we just give sigma directly?
+            nll = edl.losses.Gaussian_NLL(y, mu, tf.sqrt(var))
         else:
             nll = loss
 

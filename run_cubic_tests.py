@@ -18,7 +18,7 @@ tf.random.set_seed(seed)
 
 save_fig_dir = "./figs/toy"
 batch_size = 128
-iterations = 5000
+iterations = 8000
 show = True
 
 noise_changing = False
@@ -98,9 +98,14 @@ def plot_bbbp(model, save="bbbp", ext=".pdf"):
 def plot_gaussian(model, save="gaussian", ext=".pdf"):
     x_test_input = tf.convert_to_tensor(x_test, tf.float32)
     preds = model(x_test_input, training=False) #forward pass
-    mu, sigma = tf.split(preds, 2, axis=-1)
-    plot_scatter_with_var(mu, sigma**2, path=save+ext, n_stds=3)
+    mu, var = tf.split(preds, 2, axis=-1)
+    plot_scatter_with_var(mu, var, path=save+ext, n_stds=3)
 
+def plot_laplace(model, save="gaussian", ext=".pdf"):
+    x_test_input = tf.convert_to_tensor(x_test, tf.float32)
+    preds = model(x_test_input, training=False) #forward pass
+    mu, var = tf.split(preds, 2, axis=-1)
+    plot_scatter_with_var(mu, 2*var, path=save+ext, n_stds=3)
 
 
 #### Different toy configurations to train and plot
@@ -172,16 +177,16 @@ def laplace_4_layers_100_neurons(): #This function will not work because trainer
     trainer_obj = trainers.Likelihood
     model_generator = models.get_correct_model(dataset="toy", trainer=trainer_obj)
     model, opts = model_generator.create(input_shape=1, num_neurons=100, num_layers=4)
-    trainer = trainer_obj(model, opts, "laplace", dataset="toy", learning_rate=5e-4)
+    trainer = trainer_obj(model, opts, "laplace", dataset="toy", learning_rate=5e-3)
     print (x_train.shape)
     model, rmse, nll = trainer.train(x_train, y_train, x_train, y_train, np.array([[1.]]), iters=iterations, batch_size=batch_size, verbose=True)
-    plot_gaussian(model, os.path.join(save_fig_dir,"laplace_4_layers_100_neurons"))
+    plot_laplace(model, os.path.join(save_fig_dir,"laplace_4_layers_100_neurons"))
 
 def gaussian_4_layers_100_neurons(): #This function will not work because trainer chagnes
     trainer_obj = trainers.Likelihood
     model_generator = models.get_correct_model(dataset="toy", trainer=trainer_obj)
     model, opts = model_generator.create(input_shape=1, num_neurons=100, num_layers=4)
-    trainer = trainer_obj(model, opts, "gaussian", dataset="toy",learning_rate=5e-4)
+    trainer = trainer_obj(model, opts, "gaussian", dataset="toy",learning_rate=5e-3)
     print (x_train.shape)
     model, rmse, nll = trainer.train(x_train, y_train, x_train, y_train, np.array([[1.]]), iters=iterations, batch_size=batch_size, verbose=True)
     plot_gaussian(model, os.path.join(save_fig_dir,"laplace_4_layers_100_neurons"))

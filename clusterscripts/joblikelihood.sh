@@ -20,14 +20,13 @@ cd /home/dnair2m/evidential_regression
 pwd
 date
 start=`date +%s`
-#python /home/dnair2m/evidential_regression/run_cubic_tests.py
-#python3 train_depth.py --model laplace --learning-rate 0.001
+python3 train_depth.py --model laplace --learning-rate 0.00005
 date
 end=`date +%s`
 runtime=$((end-start))
 
 echo $runtime
-python3 train_depth.py --model gaussian --learning-rate 0.001
+python3 train_depth.py --model gaussian --learning-rate 0.00005
 date
 end=`date +%s`
 runtime=$((end-start))

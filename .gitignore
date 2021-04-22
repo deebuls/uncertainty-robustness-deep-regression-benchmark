@@ -5,6 +5,7 @@ save/*
 pretrained_models/*
 data/*
 noisy_pretrained_models/*
+*.pkl
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
