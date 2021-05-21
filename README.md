@@ -1,7 +1,10 @@
-# Deep Evidential Regression
-*NeurIPS 2020 Submission*
+# Robust Maximum Likelihood Uncertainty Estimation for Deep Regression
+*WAISE 2021 Submission*
 
-This repository contains the code to reproduce all results presented in the NeurIPS submission: "Deep Evidential Regression".
+This repository contains the code to reproduce all results presented in the WAISE submission: "Robust Maximum Likelihood Uncertainty
+Estimation for Deep Regression".
+
+## The repository is an extension to the code submitted by "Deep Evidential Regression" paper in Neurips 2021. 
 
 
 ## Setup
