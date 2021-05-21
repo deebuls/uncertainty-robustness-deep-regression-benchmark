@@ -5,11 +5,11 @@ import cv2
 from tqdm import tqdm
 import numpy as np
 
-nyu_root = "/data/nyu_depth_processed"
+nyu_root = "/scratch/dnair2m/nyuv2data/nyu_depth_processed"
 train_path = "./data/depth_train_big_new.h5"
 test_path = "./data/depth_test_big_new.h5"
 
-if not path.isdir(nyu_root):
+if not os.path.isdir(nyu_root):
     raise ValueError("Please download the Apolloscape dataset to /data/apollo. \
         Or follow the instructions in the README to download a subset of the \
         data to test this the code provided in this repository.")

@@ -21,6 +21,24 @@ def generate_cubic(x, noise=False):
     return y+r, sigma
 
 
+
+def synthetic_sine_heteroscedastic(n_points=10, noise=True):
+    """
+    Return samples from "synthetic sine" heteroscedastic noisy function.
+    """
+    bounds = [0, 15]
+
+    # x = np.random.uniform(bounds[0], bounds[1], n_points)
+    x = np.linspace(bounds[0], bounds[1], n_points)
+
+    f = np.sin(x)
+    std = 0.01 + np.abs(x - 5.0) / 10.0
+    if noise:
+        noise_data = np.random.normal(scale=std)
+        y = f + noise_data
+    else:
+        y = f
+    return x, y, std
 #####################################
 # individual data files             #
 #####################################
@@ -286,12 +304,24 @@ def _load_song():
 
 
 def _load_depth():
+    print ("####### Loading Clean data")
     train = h5py.File("data/depth_train.h5", "r")
     test = h5py.File("data/depth_test.h5", "r")
     return (train["image"], train["depth"]), (test["image"], test["depth"])
 
-def load_depth():
-    return _load_depth()
+def _load_noisy_depth():
+    #print ("Loading full noisy data")
+    print ("Loading partial noisy data")
+    #train = h5py.File("data/full_noisy_train.h5", "r")
+    train = h5py.File("data/noisy_train.h5", "r")
+    test = h5py.File("data/depth_test.h5", "r")
+    return (train["image"], train["depth"]), (test["image"], test["depth"])
+
+def load_depth(noisy=False):
+    if noisy:
+        return _load_noisy_depth()
+    else:
+        return _load_depth()
 
 def load_apollo():
     test = h5py.File("data/apolloscape_test.h5", "r")

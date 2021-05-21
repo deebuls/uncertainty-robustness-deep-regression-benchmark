@@ -11,7 +11,7 @@ import edl
 from .util import normalize, gallery
 
 class Ensemble:
-    def __init__(self, models, opts, dataset="", learning_rate=1e-3, tag=""):
+    def __init__(self, models, opts, dataset="", learning_rate=1e-3, tag="", save_files=True):
         self.mse = not opts['sigma']
         self.loss_function = edl.losses.MSE if self.mse else edl.losses.Gaussian_NLL
 
@@ -27,14 +27,17 @@ class Ensemble:
 
         trainer = self.__class__.__name__
         current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-        self.save_dir = os.path.join('save','{}_{}_{}_{}'.format(current_time, dataset, trainer, tag))
-        Path(self.save_dir).mkdir(parents=True, exist_ok=True)
+        self.save_dir = None
+        if save_files:
+            self.save_dir = os.path.join('save','{}_{}_{}_{}'.format(current_time, dataset, trainer, tag))
+            Path(self.save_dir).mkdir(parents=True, exist_ok=True)
 
-        train_log_dir = os.path.join('logs', '{}_{}_{}_{}_train'.format(current_time, dataset, trainer, tag))
-        self.train_summary_writer = tf.summary.create_file_writer(train_log_dir)
-        val_log_dir = os.path.join('logs', '{}_{}_{}_{}_val'.format(current_time, dataset, trainer, tag))
-        self.val_summary_writer = tf.summary.create_file_writer(val_log_dir)
+            train_log_dir = os.path.join('logs', '{}_{}_{}_{}_train'.format(current_time, dataset, trainer, tag))
+            self.train_summary_writer = tf.summary.create_file_writer(train_log_dir)
+            val_log_dir = os.path.join('logs', '{}_{}_{}_{}_val'.format(current_time, dataset, trainer, tag))
+            self.val_summary_writer = tf.summary.create_file_writer(val_log_dir)
 
+        print("Trainer : {} \t  Learning rate: {} ".format(trainer,learning_rate))
 
     @tf.function
     def run_train_step(self, x, y):
@@ -101,26 +104,7 @@ class Ensemble:
                 tf.summary.image("y", [gallery(tf.gather(y,idx).numpy())], max_outputs=1, step=self.iter)
                 tf.summary.image("y_hat", [gallery(tf.gather(mu,idx).numpy())], max_outputs=1, step=self.iter)
                 tf.summary.image("y_var", [gallery(normalize(tf.gather(var,idx)).numpy())], max_outputs=1, step=self.iter)
-#
-#    def get_batch(self, x, y, batch_size):
-#        idx = np.random.choice(x.shape[0], batch_size, replace=False)
-#        if isinstance(x, tf.Tensor):
-#            x_ = x[idx,...]
-#            y_ = y[idx,...]
-#        elif isinstance(x, np.ndarray) or isinstance(x, h5py.Dataset):
-#            idx = np.sort(idx)
-#            x_ = x[idx,...]
-#            y_ = y[idx,...]
-#
-#            x_divisor = 255. if x_.dtype == np.uint8 else 1.0
-#            y_divisor = 255. if y_.dtype == np.uint8 else 1.0
-#
-#            x_ = tf.convert_to_tensor(x_/x_divisor, tf.float32)
-#            y_ = tf.convert_to_tensor(y_/y_divisor, tf.float32)
-#        else:
-#            print("unknown dataset type {} {}".format(type(x), type(y)))
-#        return x_, y_
-#
+
     def get_batch(self, x, y, batch_size):
         idx = np.random.choice(x.shape[0], batch_size, replace=False)
         if isinstance(x, tf.Tensor):
@@ -131,25 +115,6 @@ class Ensemble:
             x_ = x[idx,...]
             y_ = y[idx,...]
 
-            # Adding noise to labels
-            #idx_height = np.random.randint(1, y.shape[1], size=(batch_size,200))
-            #idx_width = np.random.randint(1, y.shape[2], size=(batch_size,200))
-            #y_[:, idx_height, idx_width] = 0
-            for i in range(10):
-                first_value_height = np.random.choice(y.shape[1]-20)
-                last_value_height = first_value_height + np.random.randint(1,20)
-                first_value_width = np.random.choice(y.shape[2]-20)
-                last_value_width = first_value_width + np.random.randint(1,20)
-                
-                if (0 == i):
-                    idx_height = np.random.randint(first_value_height, last_value_height, size=(batch_size,20))
-                    idx_width = np.random.randint(first_value_width, last_value_width, size=(batch_size,20))
-                else:
-                    idx_height = np.append( idx_height, np.random.randint(first_value_height, last_value_height, size=(batch_size,20)) , axis=1)
-                    idx_width = np.append( idx_width, np.random.randint(first_value_width, last_value_width, size=(batch_size,20)) , axis=1)
-            
-            y_[:, idx_height, idx_width] = 0
-
             x_divisor = 255. if x_.dtype == np.uint8 else 1.0
             y_divisor = 255. if y_.dtype == np.uint8 else 1.0
 
@@ -159,9 +124,48 @@ class Ensemble:
             print("unknown dataset type {} {}".format(type(x), type(y)))
         return x_, y_
 
+#    def get_batch(self, x, y, batch_size):
+#        idx = np.random.choice(x.shape[0], batch_size, replace=False)
+#        if isinstance(x, tf.Tensor):
+#            x_ = x[idx,...]
+#            y_ = y[idx,...]
+#        elif isinstance(x, np.ndarray) or isinstance(x, h5py.Dataset):
+#            idx = np.sort(idx)
+#            x_ = x[idx,...]
+#            y_ = y[idx,...]
+#
+#            # Adding noise to labels
+#            #idx_height = np.random.randint(1, y.shape[1], size=(batch_size,200))
+#            #idx_width = np.random.randint(1, y.shape[2], size=(batch_size,200))
+#            #y_[:, idx_height, idx_width] = 0
+#            for i in range(10):
+#                first_value_height = np.random.choice(y.shape[1]-20)
+#                last_value_height = first_value_height + np.random.randint(1,20)
+#                first_value_width = np.random.choice(y.shape[2]-20)
+#                last_value_width = first_value_width + np.random.randint(1,20)
+#                
+#                if (0 == i):
+#                    idx_height = np.random.randint(first_value_height, last_value_height, size=(batch_size,20))
+#                    idx_width = np.random.randint(first_value_width, last_value_width, size=(batch_size,20))
+#                else:
+#                    idx_height = np.append( idx_height, np.random.randint(first_value_height, last_value_height, size=(batch_size,20)) , axis=1)
+#                    idx_width = np.append( idx_width, np.random.randint(first_value_width, last_value_width, size=(batch_size,20)) , axis=1)
+#            
+#            y_[:, idx_height, idx_width] = 0
+#
+#            x_divisor = 255. if x_.dtype == np.uint8 else 1.0
+#            y_divisor = 255. if y_.dtype == np.uint8 else 1.0
+#
+#            x_ = tf.convert_to_tensor(x_/x_divisor, tf.float32)
+#            y_ = tf.convert_to_tensor(y_/y_divisor, tf.float32)
+#        else:
+#            print("unknown dataset type {} {}".format(type(x), type(y)))
+#        return x_, y_
+
     def save(self, name):
-        for i, model in enumerate(self.models):
-            model.save(os.path.join(self.save_dir, "{}_{}.h5".format(name, i)))
+        if self.save_dir:
+            for i, model in enumerate(self.models):
+                model.save(os.path.join(self.save_dir, "{}_{}.h5".format(name, i)))
 
     def train(self, x_train, y_train, x_test, y_test, y_scale, batch_size=128, iters=10000, verbose=True):
         tic = time.time()
@@ -169,8 +173,8 @@ class Ensemble:
             x_input_batch, y_input_batch = self.get_batch(x_train, y_train, batch_size)
             loss, y_hat = self.run_train_step(x_input_batch, y_input_batch)
 
-            if self.iter % 10 == 0:
-                self.save_train_summary(loss, x_input_batch, y_input_batch, y_hat)
+            #if self.iter % 10 == 0:
+            #    self.save_train_summary(loss, x_input_batch, y_input_batch, y_hat)
 
             if self.iter % 100 == 0:
                 x_test_batch, y_test_batch = self.get_batch(x_test, y_test, min(100, x_test.shape[0]))
@@ -178,7 +182,7 @@ class Ensemble:
                 nll += np.log(y_scale[0,0])
                 rmse *= y_scale[0,0]
 
-                self.save_val_summary(vloss, x_test_batch, y_test_batch, mu, var)
+                #self.save_val_summary(vloss, x_test_batch, y_test_batch, mu, var)
 
                 if rmse.numpy() < self.min_rmse:
                     self.min_rmse = rmse.numpy()

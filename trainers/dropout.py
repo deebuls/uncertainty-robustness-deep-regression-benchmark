@@ -11,7 +11,7 @@ import edl
 from .util import normalize, gallery
 
 class Dropout:
-    def __init__(self, model, opts, dataset="", learning_rate=1e-3, tag=""):
+    def __init__(self, model, opts, dataset="", learning_rate=1e-3, tag="", save_files=True):
 
         self.model = model
 
@@ -29,14 +29,17 @@ class Dropout:
 
         trainer = self.__class__.__name__
         current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-        self.save_dir = os.path.join('save','{}_{}_{}_{}'.format(current_time, dataset, trainer, tag))
-        Path(self.save_dir).mkdir(parents=True, exist_ok=True)
+        self.save_dir = None
+        if save_files:
+            self.save_dir = os.path.join('save','{}_{}_{}_{}'.format(current_time, dataset, trainer, tag))
+            Path(self.save_dir).mkdir(parents=True, exist_ok=True)
 
-        train_log_dir = os.path.join('logs', '{}_{}_{}_{}_train'.format(current_time, dataset, trainer, tag))
-        self.train_summary_writer = tf.summary.create_file_writer(train_log_dir)
-        val_log_dir = os.path.join('logs', '{}_{}_{}_{}_val'.format(current_time, dataset, trainer, tag))
-        self.val_summary_writer = tf.summary.create_file_writer(val_log_dir)
+            train_log_dir = os.path.join('logs', '{}_{}_{}_{}_train'.format(current_time, dataset, trainer, tag))
+            self.train_summary_writer = tf.summary.create_file_writer(train_log_dir)
+            val_log_dir = os.path.join('logs', '{}_{}_{}_{}_val'.format(current_time, dataset, trainer, tag))
+            self.val_summary_writer = tf.summary.create_file_writer(val_log_dir)
 
+        print("Trainer : {} \t  Learning rate: {} ".format(trainer,learning_rate))
 
     @tf.function
     def run_train_step(self, x, y):
@@ -118,7 +121,8 @@ class Dropout:
         return x_, y_
 
     def save(self, name):
-        self.model.save(os.path.join(self.save_dir, "{}.h5".format(name)))
+        if self.save_dir:
+            self.model.save(os.path.join(self.save_dir, "{}.h5".format(name)))
 
     def train(self, x_train, y_train, x_test, y_test, y_scale, batch_size=128, iters=10000, verbose=True):
         tic = time.time()
@@ -126,8 +130,8 @@ class Dropout:
             x_input_batch, y_input_batch = self.get_batch(x_train, y_train, batch_size)
             loss, y_hat = self.run_train_step(x_input_batch, y_input_batch)
 
-            if self.iter % 10 == 0:
-                self.save_train_summary(loss, x_input_batch, y_input_batch, y_hat)
+            #if self.iter % 10 == 0:
+                #self.save_train_summary(loss, x_input_batch, y_input_batch, y_hat)
 
             if self.iter % 100 == 0:
                 x_test_batch, y_test_batch = self.get_batch(x_test, y_test, min(100, x_test.shape[0]))
@@ -135,7 +139,7 @@ class Dropout:
                 nll += np.log(y_scale[0,0])
                 rmse *= y_scale[0,0]
 
-                self.save_val_summary(vloss, x_test_batch, y_test_batch, mu, var)
+                #self.save_val_summary(vloss, x_test_batch, y_test_batch, mu, var)
 
                 if rmse.numpy() < self.min_rmse:
                     self.min_rmse = rmse.numpy()

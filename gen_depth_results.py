@@ -33,6 +33,7 @@ class Model(Enum):
 
 
 save_dir = "noisy_pretrained_models"
+#save_dir = "pretrained_models"
 trained_models = {
 #    Model.Dropout: [
 #        "dropout/trial1.h5",
@@ -58,6 +59,9 @@ trained_models = {
         "laplace/trial1.h5",
         "laplace/trial2.h5",
         "laplace/trial3.h5",
+#        "laplace/trial4.h5",
+#        "laplace/trial5.h5",
+#        "laplace/trial6.h5",
     ],
 }
 output_dir = "figs/depth"
@@ -78,7 +82,7 @@ def compute_predictions(batch_size=50, n_adv=9):
             model = models.load_depth_model(full_path, compile=False)
 
             model_log = defaultdict(list)
-            print(f"Running {model_path}")
+            print(f"Running {full_path}")
 
             for x, y, ood in datasets:
                 # max(10,x.shape[0]//500-1)
@@ -166,6 +170,7 @@ def gen_cutoff_plot(df_image, eps=0.0, ood=False, plot=True):
             cutoff_inds = (percentiles * df_model.shape[0]).astype(int)
 
             df_model["Error"] = np.abs(df_model["Mu"] - df_model["Target"])
+            #df_model["Error"] = (df_model["Mu"] - df_model["Target"])**2
             mean_error = [df_model[cutoff:]["Error"].mean()
                 for cutoff in cutoff_inds]
             df_single_cutoff = pd.DataFrame({'Method': method.value, 'Model Path': model_path,
@@ -182,12 +187,15 @@ def gen_cutoff_plot(df_image, eps=0.0, ood=False, plot=True):
         plt.show()
 
         sns.lineplot(x="Percentile", y="Error", hue="Model Path", style="Method", data=df_cutoff)
-        plt.savefig(os.path.join(output_dir, f"cutoff_eps-{eps}_ood-{ood}_trial.pdf"))
+        # Put the legend out of the figure
+        plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+        plt.savefig(os.path.join(output_dir, f"cutoff_eps-{eps}_ood-{ood}_trial.pdf"), bbox_inches='tight')
         plt.show()
 
         g = sns.FacetGrid(df_cutoff, col="Method", legend_out=False)
         g = g.map_dataframe(sns.lineplot, x="Percentile", y="Error", hue="Model Path")#.add_legend()
-        plt.savefig(os.path.join(output_dir, f"cutoff_eps-{eps}_ood-{ood}_trial_panel.pdf"))
+        plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+        plt.savefig(os.path.join(output_dir, f"cutoff_eps-{eps}_ood-{ood}_trial_panel.pdf"), bbox_inches='tight')
         plt.show()
 
 
@@ -233,10 +241,14 @@ def gen_calibration_plot(df_image, eps=0.0, ood=False, plot=True):
         table.to_csv(os.path.join(output_dir, "calib_errors.csv"))
 
         print("Plotting confidence plots")
+        cm = 1/2.54  # centimeters in inches
+        plt.figure(figsize=(14.2*cm/3.0,14.2*cm/3.0))
         sns.lineplot(x="Expected Conf.", y="Observed Conf.", hue="Method", data=df_calibration)
-        plt.savefig(os.path.join(output_dir, f"calib_eps-{eps}_ood-{ood}.pdf"))
+        plt.legend(fontsize='xx-small')
+        plt.savefig(os.path.join(output_dir, f"calib_eps-{eps}_ood-{ood}.pdf"), bbox_inches='tight')
         plt.show()
 
+        plt.figure(figsize=(14.2*cm,14.2*cm/2.0))
         g = sns.FacetGrid(df_calibration, col="Method", legend_out=False)
         g = g.map_dataframe(sns.lineplot, x="Expected Conf.", y="Observed Conf.", hue="Model Path")#.add_legend()
         plt.savefig(os.path.join(output_dir, f"calib_eps-{eps}_ood-{ood}_panel.pdf"))
@@ -252,24 +264,57 @@ def gen_adv_plots(df_image, ood=False):
     # df = df.iloc[::10]
     df_pixel = df_image_to_pixels(df, keys=["Target", "Mu", "Sigma", "Epsilon"])
     df_pixel["Error"] = np.abs(df_pixel["Mu"] - df_pixel["Target"])
+    print ("Generating RMSE Score")
+    df_pixel["RMSE"] = (df_pixel["Mu"] - df_pixel["Target"])**2
+    print (f"Generating Interval Score")
+    df_pixel["lower"] = df_pixel["Mu"] - 2*df_pixel["Sigma"]
+    df_pixel["lower"].mask(df_pixel["Method"]=="Laplace", df_pixel["Mu"] - 3*df_pixel["Sigma"], inplace=True)
+    df_pixel["upper"] = df_pixel["Mu"] + 2*df_pixel["Sigma"]
+    df_pixel["upper"].mask(df_pixel["Method"]=="Laplace", df_pixel["Mu"] + 3*df_pixel["Sigma"], inplace=True)
+    df_pixel["Interval Score"] = df_pixel["upper"] - df_pixel["lower"] \
+     + (2/0.95)*(df_pixel["lower"]-df_pixel["Target"])*(df_pixel["Target"]<df_pixel["lower"]) \
+     + (2/0.95)*(df_pixel["Target"] - df_pixel["upper"])*(df_pixel["Target"]>df_pixel["upper"])
+    
+    
     df_pixel["Entropy"] = 0.5*np.log(2*np.pi*np.exp(1.)*(df_pixel["Sigma"]**2))
+    print (df_pixel[df_pixel["Method"]=="Laplace"].head() )
+    df_pixel["Entropy"].mask(df_pixel["Method"] == "Laplace", np.log(2*df_pixel["Sigma"]*np.exp(1.)), inplace=True) #  entropy for laplace distirbution
+    print (df_pixel[df_pixel["Method"]=="Laplace"].head() )
 
     ### Plot epsilon vs error per method
     df = df_pixel.groupby([df_pixel.index, "Method", "Model Path", "Epsilon"]).mean().reset_index()
     df_by_method = df_pixel.groupby(["Method", "Model Path", "Epsilon"]).mean().reset_index()
+    cm = 1/2.54  # centimeters in inches
+    plt.figure(figsize=(14.2*cm/2.0,14.2*cm/2.0))
     sns.lineplot(x="Epsilon", y="Error", hue="Method", data=df_by_method)
-    plt.savefig(os.path.join(output_dir, f"adv_ood-{ood}_method_error.pdf"))
+    plt.legend(fontsize='x-small')
+    plt.savefig(os.path.join(output_dir, f"adv_ood-{ood}_method_error.pdf"), bbox_inches='tight')
     plt.show()
 
-    ### Plot epsilon vs uncertainty per method
+    ### Plot epsilon vs Sigma per method
+    cm = 1/2.54  # centimeters in inches
+    plt.figure(figsize=(14.2*cm/2.0,14.2*cm/2.0))
     sns.lineplot(x="Epsilon", y="Sigma", hue="Method", data=df_by_method)
-    plt.savefig(os.path.join(output_dir, f"adv_ood-{ood}_method_sigma.pdf"))
+    plt.legend(fontsize='x-small')
+    plt.savefig(os.path.join(output_dir, f"adv_ood-{ood}_method_sigma.pdf"), bbox_inches='tight')
     plt.show()
+    
+    ### Plot epsilon vs entropy per method
+    cm = 1/2.54  # centimeters in inches
+    plt.figure(figsize=(14.2*cm/2.0,14.2*cm/2.0))
     # df_by_method["Entropy"] = 0.5*np.log(2*np.pi*np.exp(1.)*(df_by_method["Sigma"]**2))
-    # sns.lineplot(x="Epsilon", y="Entropy", hue="Method", data=df_by_method)
-    # plt.savefig(os.path.join(output_dir, f"adv_ood-{ood}_method_entropy.pdf"))
-    # plt.show()
+    sns.lineplot(x="Epsilon", y="Entropy", hue="Method", data=df_by_method)
+    plt.legend(fontsize='x-small')
+    plt.savefig(os.path.join(output_dir, f"adv_ood-{ood}_method_entropy.pdf"), bbox_inches='tight')
+    plt.show()
 
+
+    ### Plot epsilon vs Interval Score per method
+    cm = 1/2.54  # centimeters in inches
+    plt.figure(figsize=(14.2*cm/2.0,14.2*cm/2.0))
+    sns.lineplot(x="Epsilon", y="Interval Score", hue="Method", data=df_by_method)
+    plt.savefig(os.path.join(output_dir, f"adv_ood-{ood}_method_interval_score.pdf"), bbox_inches='tight')
+    plt.show()
 
     ### Plot entropy cdf for different epsilons
     df_cumdf = pd.DataFrame(columns=["Method", "Model Path", "Epsilon", "Entropy", "CDF"])
@@ -293,9 +338,12 @@ def gen_adv_plots(df_image, ood=False):
                     'Epsilon': eps, "Entropy": unc_, 'CDF': prob_})
                 df_cumdf = df_cumdf.append(df_single)
 
-    g = sns.FacetGrid(df_cumdf, col="Method")
-    g = g.map_dataframe(sns.lineplot, x="Entropy", y="CDF", hue="Epsilon", ci=None).add_legend()
-    plt.savefig(os.path.join(output_dir, f"adv_ood-{ood}_cdf_method.pdf"))
+    cm = 1/2.54  # centimeters in inches
+    g = sns.FacetGrid(df_cumdf, col="Method", height=14.2*cm/3.0, aspect=0.8)
+    gp = g.map_dataframe(sns.lineplot, x="Entropy", y="CDF", hue="Epsilon", ci=None)#.add_legend()
+    g.axes[0][2].legend()
+    plt.legend(fontsize='xx-small')
+    plt.savefig(os.path.join(output_dir, f"adv_ood-{ood}_cdf_method.pdf"), bbox_inches='tight')
     plt.show()
 
     # NOT USED FOR THE FINAL PAPER, BUT FEEL FREE TO UNCOMMENT AND RUN
@@ -310,16 +358,16 @@ def gen_adv_plots(df_image, ood=False):
     # df_calibration = pd.concat(calibrations, ignore_index=True)
     # df_table = pd.concat(tables, ignore_index=True)
     # df_table.to_csv(os.path.join(output_dir, f"adv_ood-{ood}_calib_error.csv"))
-    #
-    #
+    # 
+    # 
     # sns.catplot(x="Method", y="Calibration Error", hue="Epsilon", data=df_calibration, kind="bar")
     # plt.savefig(os.path.join(output_dir, f"adv_ood-{ood}_calib_error_method.pdf"))
     # plt.show()
-    #
+    # 
     # sns.catplot(x="Epsilon", y="Calibration Error", hue="Method", data=df_calibration, kind="bar")
     # plt.savefig(os.path.join(output_dir, f"adv_ood-{ood}_calib_error_epsilon.pdf"))
     # plt.show()
-    #
+    # 
     # g = sns.FacetGrid(df_calibration, col="Method")
     # g = g.map_dataframe(sns.lineplot, x="Expected Conf.", y="Observed Conf.", hue="Epsilon")
     # g = g.add_legend()
@@ -338,6 +386,7 @@ def gen_ood_comparison(df_image, unc_key="Entropy"):
     print (inf_id.head())
     df_pixel["Entropy"] = 0.5*np.log(2*np.pi*np.exp(1.)*(df_pixel["Sigma"]**2))
     print ("Entropy inf count :",np.sum(np.isinf(df_pixel['Entropy'])))
+    df_pixel["Entropy"].mask(df_pixel["Method"]=="Laplace", np.log(2*df_pixel["Sigma"]*np.exp(1.)), inplace=True) #  entropy for laplace distirbution
 
     df_by_method = df_pixel.groupby(["Method","Model Path", "OOD"])
     df_by_image = df_pixel.groupby([df_pixel.index, "Method","Model Path", "OOD"])
@@ -345,19 +394,63 @@ def gen_ood_comparison(df_image, unc_key="Entropy"):
     df_mean_unc = df_by_method[unc_key].mean().reset_index() #mean of all pixels per method
     df_mean_unc_img = df_by_image[unc_key].mean().reset_index() #mean of all pixels in every method and image
 
-    sns.catplot(x="Method", y=unc_key, hue="OOD", data=df_mean_unc_img, kind="violin")
-    plt.savefig(os.path.join(output_dir, f"ood_{unc_key}_violin.pdf"))
-    plt.show()
+    #cm = 1/2.54  # centimeters in inches
+    #sns.catplot(x="Method", y=unc_key, hue="OOD", data=df_mean_unc_img, kind="violin")
+    #plt.savefig(os.path.join(output_dir, f"ood_{unc_key}_violin.pdf"))
+    #plt.show()
 
-    sns.catplot(x="Method", y=unc_key, hue="OOD", data=df_mean_unc_img, kind="box", whis=0.5, showfliers=False)
-    plt.savefig(os.path.join(output_dir, f"ood_{unc_key}_box.pdf"))
+    cm = 1/2.54  # centimeters in inches
+    fig = plt.figure(figsize=(14.2*cm/2.0,14.2*cm/2.0))
+    #sns.catplot(x="Method", y=unc_key, hue="OOD", data=df_mean_unc_img, kind="box", whis=0.5, showfliers=False)
+    g = sns.boxplot(x="Method", y=unc_key, hue="OOD", data=df_mean_unc_img, whis=0.5, showfliers=False)
+    g.get_legend().remove()
+    handles, labels = g.get_legend_handles_labels()
+    print ("OOD Labels ", labels)
+    plt.legend(handles, ['ID','OOD'], bbox_to_anchor=(0.01, 0.99), loc='upper left', ncol=1)
+    plt.savefig(os.path.join(output_dir, f"ood_{unc_key}_box.pdf"), bbox_inches='tight')
     plt.show()
+    exit()
 
 
     ### Plot PDF for each Method on both OOD and IN
-    g = sns.FacetGrid(df_mean_unc_img, col="Method", hue="OOD")
-    g.map(sns.distplot, "Entropy").add_legend()
-    plt.savefig(os.path.join(output_dir, f"ood_{unc_key}_pdf_per_method.pdf"))
+    cm = 1/2.54  # centimeters in inches
+    g = sns.FacetGrid(df_mean_unc_img, col="Method", hue="OOD", height=14.2*cm/2.0, aspect=0.8, legend_out=False)
+    g.map(sns.distplot, "Entropy")#.add_legend()
+    g.axes[0][2].legend()
+    plt.legend(['ID','OOD'], fontsize='small')
+    plt.savefig(os.path.join(output_dir, f"ood_{unc_key}_pdf_per_method.pdf"), bbox_inches='tight')
+    plt.show()
+
+    ### Plot CDFs for every method on both OOD and IN
+    df_cumdf = pd.DataFrame(columns=["Method", "Model Path", "OOD", unc_key, "CDF"])
+    unc_ = np.linspace(df_mean_unc_img[unc_key].min(), df_mean_unc_img[unc_key].max(), 200)
+
+    for method in df_mean_unc_img["Method"].unique():
+        for model_path in df_mean_unc_img["Model Path"].unique():
+            for ood in df_mean_unc_img["OOD"].unique():
+                df = df_mean_unc_img[
+                    (df_mean_unc_img["Method"]==method) &
+                    (df_mean_unc_img["Model Path"]==model_path) &
+                    (df_mean_unc_img["OOD"]==ood)]
+                if len(df) == 0:
+                    continue
+                unc = np.sort(df[unc_key])
+                prob = np.linspace(0,1,unc.shape[0])
+                f_cdf = scipy.interpolate.interp1d(unc, prob, fill_value=(0.,1.), bounds_error=False)
+                prob_ = f_cdf(unc_)
+
+                df_single = pd.DataFrame({'Method': method, 'Model Path': model_path,
+                    'OOD': ood, unc_key: unc_, 'CDF': prob_})
+                df_cumdf = df_cumdf.append(df_single)
+    cm = 1/2.54  # centimeters in inches
+    plt.figure(figsize=(14.2*cm/2.0,14.2*cm/2.0))
+    g = sns.lineplot(data=df_cumdf, x=unc_key, y="CDF", hue="Method", style="OOD")
+    handles, labels = g.get_legend_handles_labels()
+    print ("OOD Labels ", labels)
+    labels[-2] = 'ID';labels[-1] = 'OOD';
+    print ("OOD Labels ", labels)
+    plt.legend( handles, labels, fontsize='x-small')
+    plt.savefig(os.path.join(output_dir, f"ood_{unc_key}_cdfs.pdf"), bbox_inches='tight')
     plt.show()
 
 
@@ -402,31 +495,6 @@ def gen_ood_comparison(df_image, unc_key="Entropy"):
 
 
 
-    ### Plot CDFs for every method on both OOD and IN
-    df_cumdf = pd.DataFrame(columns=["Method", "Model Path", "OOD", unc_key, "CDF"])
-    unc_ = np.linspace(df_mean_unc_img[unc_key].min(), df_mean_unc_img[unc_key].max(), 200)
-
-    for method in df_mean_unc_img["Method"].unique():
-        for model_path in df_mean_unc_img["Model Path"].unique():
-            for ood in df_mean_unc_img["OOD"].unique():
-                df = df_mean_unc_img[
-                    (df_mean_unc_img["Method"]==method) &
-                    (df_mean_unc_img["Model Path"]==model_path) &
-                    (df_mean_unc_img["OOD"]==ood)]
-                if len(df) == 0:
-                    continue
-                unc = np.sort(df[unc_key])
-                prob = np.linspace(0,1,unc.shape[0])
-                f_cdf = scipy.interpolate.interp1d(unc, prob, fill_value=(0.,1.), bounds_error=False)
-                prob_ = f_cdf(unc_)
-
-                df_single = pd.DataFrame({'Method': method, 'Model Path': model_path,
-                    'OOD': ood, unc_key: unc_, 'CDF': prob_})
-                df_cumdf = df_cumdf.append(df_single)
-
-    sns.lineplot(data=df_cumdf, x=unc_key, y="CDF", hue="Method", style="OOD")
-    plt.savefig(os.path.join(output_dir, f"ood_{unc_key}_cdfs.pdf"))
-    plt.show()
 
 
 
@@ -508,7 +576,40 @@ def create_adversarial_pattern(model, x, y):
     signed_grad = tf.sign(gradient)
     return signed_grad
 
+def gen_interval_score_plot(df_image):
+    print(f"Generating Interval score")
+    df = df_image[(df_image["OOD"]==False) & ((df_image["Epsilon"]==0.0) | (df_image["Epsilon"]==0.02) | (df_image["Epsilon"]==0.04))]
+    # df = df.iloc[::10]
+    df_pixel = df_image_to_pixels(df, keys=["Target", "Mu", "Sigma", "Epsilon"])
 
+    #print ("Unique Adv : ", df_pixel["Epsilon"].unique())
+
+    print ("Generating RMSE Score")
+    df_pixel["RMSE"] = (df_pixel["Mu"] - df_pixel["Target"])**2
+    g = sns.catplot(x="Epsilon", y="RMSE", hue="Method", data=df_pixel, kind="box", whis=0.5, showfliers=False)
+    g.set(yscale="log")
+    plt.savefig(os.path.join(output_dir, f"RMSE_Adv_box_depth_logscale.pdf"))
+    plt.show()
+
+    g = sns.catplot(x="Epsilon", y="RMSE", hue="Method", data=df_pixel, kind="box", whis=0.5, showfliers=False)
+    plt.savefig(os.path.join(output_dir, f"RMSE_Adv_box_depth.pdf"))
+    plt.show()
+
+    print (f"Generating Interval Score")
+    df_pixel["lower"] = df_pixel["Mu"] - 2*df_pixel["Sigma"]
+    df_pixel["lower"].mask(df_pixel["Method"]=="Laplace", df_pixel["Mu"] - 3*df_pixel["Sigma"], inplace=True)
+    df_pixel["upper"] = df_pixel["Mu"] + 2*df_pixel["Sigma"]
+    df_pixel["upper"].mask(df_pixel["Method"]=="Laplace", df_pixel["Mu"] + 3*df_pixel["Sigma"], inplace=True)
+    
+    df_pixel["Interval Score"] = df_pixel["upper"] - df_pixel["lower"] \
+     + (2/0.95)*(df_pixel["lower"]-df_pixel["Target"])*(df_pixel["Target"]<df_pixel["lower"]) \
+     + (2/0.95)*(df_pixel["Target"] - df_pixel["upper"])*(df_pixel["Target"]>df_pixel["upper"])
+    
+    g = sns.catplot(x="Epsilon", y="Interval Score", hue="Method", data=df_pixel, kind="box", whis=0.5, showfliers=False)
+    g.set(yscale="log")
+    plt.savefig(os.path.join(output_dir, f"Interval_score_Adv_box_depth.pdf"))
+    plt.show()
+ 
 
 if args.load_pkl:
     print("Loading!")
@@ -524,4 +625,5 @@ Path(output_dir).mkdir(parents=True, exist_ok=True)
 #gen_calibration_plot(df_image)
 #gen_adv_plots(df_image)
 gen_ood_comparison(df_image)
+#gen_interval_score_plot(df_image)
 """ ================================================== """

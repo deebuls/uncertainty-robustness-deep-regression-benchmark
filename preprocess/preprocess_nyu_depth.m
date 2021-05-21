@@ -1,10 +1,10 @@
 clear;
 
-dataset_path = '/data/nyu_depth';
-output_path = '/data/nyu_depth_processed';
+dataset_path = '/scratch/dnair2m/nyuv2data/nyu_depth';
+output_path = '/scratch/dnair2m/nyuv2data/nyu_depth_processed';
 skip_n = 1;
 
-addpath(genpath('~/Documents/MATLAB'));
+addpath(genpath('/home/dnair2m/nyuv2_toolbox'));
 
 places = dir(dataset_path);
 places = places(3:end);
@@ -32,10 +32,30 @@ for i=1:length(places)
           rgb = imread(strcat(dataset_path, '/', place, '/', sync(j).rawRgbFilename));
           depth = imread(strcat(dataset_path, '/', place, '/', sync(j).rawDepthFilename));
           depth_proj = project_depth_map(swapbytes(depth), rgb);
+          fprintf('befor fill \n');
           depth_fill = fill_depth_colorization(double(rgb)/255,depth_proj,0.9);
+          fprintf('after fill \n');
 
-          disp = (1./depth_fill) * 255.;
-          disp = uint8(max(0, min(255, disp)));
+          disp_fill_1 = (1./depth_fill) * 255.;
+          disp_fill_2 = uint8(max(0, min(255, disp_fill_1)));
+          disp_1 = (1./depth_proj) * 255.;
+          disp = uint8(max(0, min(255, disp_1)));
+          
+          %% Now visualize the pair before and after alignment.
+          imgOverlayBefore = get_rgb_depth_overlay(rgb, disp_fill);
+          
+          imgOverlayAfter = get_rgb_depth_overlay(rgb, disp);
+          
+          figure;
+          subplot(1,2,1);
+          imagesc(crop_image(imgOverlayBefore));
+          title('Before projection with filling ');
+          
+          fi
+          imagesc(crop_image(imgOverlayAfter));
+          title('After projection without filling');
+          
+          exit;
         catch
           continue;
         end
