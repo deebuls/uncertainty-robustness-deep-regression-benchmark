@@ -2,7 +2,7 @@
 figs/*
 logs/*
 save/*
-preprocess/*
+preprocess/data/*
 pretrained_models/*
 data/*
 noisy_pretrained_models/*
