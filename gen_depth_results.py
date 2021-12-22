@@ -394,6 +394,86 @@ def gen_ood_comparison(df_image, unc_key="Entropy"):
     df_mean_unc = df_by_method[unc_key].mean().reset_index() #mean of all pixels per method
     df_mean_unc_img = df_by_image[unc_key].mean().reset_index() #mean of all pixels in every method and image
 
+    ### Grab some sample images 
+    random_1 = np.random.randint(400)
+    random_2 = np.random.randint(400)
+    for method in df_mean_unc_img["Method"].unique():
+        imgs_max = dict()
+        imgs_min = dict()
+        df_subset = df_mean_unc_img[
+            (df_mean_unc_img["Method"]==method) &
+            (df_mean_unc_img["OOD"]==False)]
+        if len(df_subset) == 0:
+            continue
+
+        print ("########## : ", method)
+        print (df_subset.head())
+        def get_imgs_from_idx(idx):
+            i_img = df_subset.loc[idx]["level_0"]
+            img_data = df_image.loc[i_img]
+            sigma = np.array(img_data["Sigma"])
+            entropy = np.log(sigma**2)
+
+            ret = [img_data["Input"], img_data["Mu"], entropy, img_data["Target"]]
+            return list(map(trim, ret))
+
+        imgs_max[False] = get_imgs_from_idx(df_subset.index[random_1])
+        imgs_min[False] = get_imgs_from_idx(df_subset.index[random_2])
+
+        all_entropy_imgs = np.array([ [d[ood][2] for ood in d.keys()] for d in (imgs_max, imgs_min)])
+        entropy_bounds = (all_entropy_imgs.min(), all_entropy_imgs.max())
+        Path(os.path.join(output_dir, "images")).mkdir(parents=True, exist_ok=True)
+        for d in (imgs_max, imgs_min):
+            for ood, (x, y, entropy, target) in d.items():
+                id = os.path.join(output_dir, f"images/ood_{ood}_method_{method}_entropy_{entropy.mean()}")
+                cv2.imwrite(f"{id}_0.png", 255*x)
+                cv2.imwrite(f"{id}_mu.png", apply_cmap(y, cmap=cv2.COLORMAP_JET))
+                cv2.imwrite(f"{id}_target.png", apply_cmap(target, cmap=cv2.COLORMAP_JET))
+                entropy = (entropy - entropy_bounds[0]) / (entropy_bounds[1]-entropy_bounds[0])
+                cv2.imwrite(f"{id}_unc.png", apply_cmap(entropy))
+
+    exit()
+
+    ### Grab some sample images of most and least uncertainty
+    for method in df_mean_unc_img["Method"].unique():
+        imgs_max = dict()
+        imgs_min = dict()
+        for ood in df_mean_unc_img["OOD"].unique():
+            df_subset = df_mean_unc_img[
+                (df_mean_unc_img["Method"]==method) &
+                (df_mean_unc_img["OOD"]==ood)]
+            if len(df_subset) == 0:
+                continue
+            def get_imgs_from_idx(idx):
+                i_img = df_subset.loc[idx]["level_0"]
+                img_data = df_image.loc[i_img]
+                sigma = np.array(img_data["Sigma"])
+                entropy = np.log(sigma**2)
+
+                ret = [img_data["Input"], img_data["Mu"], entropy, img_data["Target"]]
+                return list(map(trim, ret))
+
+            def idxquantile(s, q=0.5, *args, **kwargs):
+                qv = s.quantile(q, *args, **kwargs)
+                return (s.sort_values()[::-1] <= qv).idxmax()
+
+            imgs_max[ood] = get_imgs_from_idx(idx=idxquantile(df_subset["Entropy"], 0.95))
+            imgs_min[ood] = get_imgs_from_idx(idx=idxquantile(df_subset["Entropy"], 0.05))
+
+        all_entropy_imgs = np.array([ [d[ood][2] for ood in d.keys()] for d in (imgs_max, imgs_min)])
+        entropy_bounds = (all_entropy_imgs.min(), all_entropy_imgs.max())
+
+        Path(os.path.join(output_dir, "images")).mkdir(parents=True, exist_ok=True)
+        for d in (imgs_max, imgs_min):
+            for ood, (x, y, entropy, target) in d.items():
+                id = os.path.join(output_dir, f"images/ood_{ood}_method_{method}_entropy_{entropy.mean()}")
+                cv2.imwrite(f"{id}_0.png", 255*x)
+                cv2.imwrite(f"{id}_mu.png", apply_cmap(y, cmap=cv2.COLORMAP_JET))
+                cv2.imwrite(f"{id}_target.png", apply_cmap(target, cmap=cv2.COLORMAP_JET))
+                entropy = (entropy - entropy_bounds[0]) / (entropy_bounds[1]-entropy_bounds[0])
+                cv2.imwrite(f"{id}_unc.png", apply_cmap(entropy))
+
+    exit()
     #cm = 1/2.54  # centimeters in inches
     #sns.catplot(x="Method", y=unc_key, hue="OOD", data=df_mean_unc_img, kind="violin")
     #plt.savefig(os.path.join(output_dir, f"ood_{unc_key}_violin.pdf"))
@@ -452,47 +532,6 @@ def gen_ood_comparison(df_image, unc_key="Entropy"):
     plt.legend( handles, labels, fontsize='x-small')
     plt.savefig(os.path.join(output_dir, f"ood_{unc_key}_cdfs.pdf"), bbox_inches='tight')
     plt.show()
-
-
-    ### Grab some sample images of most and least uncertainty
-    for method in df_mean_unc_img["Method"].unique():
-        imgs_max = dict()
-        imgs_min = dict()
-        for ood in df_mean_unc_img["OOD"].unique():
-            df_subset = df_mean_unc_img[
-                (df_mean_unc_img["Method"]==method) &
-                (df_mean_unc_img["OOD"]==ood)]
-            if len(df_subset) == 0:
-                continue
-
-            def get_imgs_from_idx(idx):
-                i_img = df_subset.loc[idx]["level_0"]
-                img_data = df_image.loc[i_img]
-                sigma = np.array(img_data["Sigma"])
-                entropy = np.log(sigma**2)
-
-                ret = [img_data["Input"], img_data["Mu"], entropy]
-                return list(map(trim, ret))
-
-            def idxquantile(s, q=0.5, *args, **kwargs):
-                qv = s.quantile(q, *args, **kwargs)
-                return (s.sort_values()[::-1] <= qv).idxmax()
-
-            imgs_max[ood] = get_imgs_from_idx(idx=idxquantile(df_subset["Entropy"], 0.95))
-            imgs_min[ood] = get_imgs_from_idx(idx=idxquantile(df_subset["Entropy"], 0.05))
-
-        all_entropy_imgs = np.array([ [d[ood][2] for ood in d.keys()] for d in (imgs_max, imgs_min)])
-        entropy_bounds = (all_entropy_imgs.min(), all_entropy_imgs.max())
-
-        Path(os.path.join(output_dir, "images")).mkdir(parents=True, exist_ok=True)
-        for d in (imgs_max, imgs_min):
-            for ood, (x, y, entropy) in d.items():
-                id = os.path.join(output_dir, f"images/method_{method}_ood_{ood}_entropy_{entropy.mean()}")
-                cv2.imwrite(f"{id}_0.png", 255*x)
-                cv2.imwrite(f"{id}_1.png", apply_cmap(y, cmap=cv2.COLORMAP_JET))
-                entropy = (entropy - entropy_bounds[0]) / (entropy_bounds[1]-entropy_bounds[0])
-                cv2.imwrite(f"{id}_2.png", apply_cmap(entropy))
-
 
 
 

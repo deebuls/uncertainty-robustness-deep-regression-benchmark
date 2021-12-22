@@ -1,5 +1,5 @@
 # Robust Maximum Likelihood Uncertainty Estimation for Deep Regression
-*WAISE 2021 Submission*
+*SafeAI 2022(at AAAI-22) Submission*
 
 This repository contains the code to reproduce all results presented in the WAISE submission: "Robust Maximum Likelihood Uncertainty
 Estimation for Deep Regression".

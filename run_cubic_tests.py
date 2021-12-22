@@ -64,7 +64,7 @@ y_train_robustness = np.random.uniform(-10, 10, 50).reshape(-1,1)
 ### Plotting helper functions ###
 def plot_scatter():
     plt.scatter(x_train, y_train, s=1., c='#463c3c', zorder=0)
-    plt.scatter(x_train_robustness, y_train_robustness, s=1.2, c='r', marker='x',zorder=0)
+    plt.scatter(x_train_robustness, y_train_robustness, s=1.2, c='r', marker='X',zorder=0)
     plt.plot(x_test, y_test, 'r--', zorder=2)
     plt.gca().set_xlim((min(x_test), max(x_test)))
     #plt.gca().set_ylim(min(y_train),max(y_train))
@@ -79,7 +79,7 @@ def plot_scatter():
 
 def plot_scatter_with_var(mu, var, path, n_stds=3):
     plt.scatter(x_train, y_train, s=1., c='#463c3c', zorder=0)
-    plt.scatter(x_train_robustness, y_train_robustness, s=1.2, c='r', marker='x',zorder=0)
+    plt.scatter(x_train_robustness, y_train_robustness, c='r', marker='x', s=8., zorder=1)
     for k in np.linspace(0, n_stds, 4):
         plt.fill_between(x_test[:,0], (mu-k*var)[:,0], (mu+k*var)[:,0], alpha=0.1, edgecolor=None, facecolor='#00aeef', linewidth=0, antialiased=True, zorder=1)
 
@@ -237,7 +237,7 @@ def laplace_4_layers_100_neurons(x_train, y_train, x_test):
     trainer_obj = trainers.Likelihood
     model_generator = models.get_correct_model(dataset="toy", trainer=trainer_obj)
     model, opts = model_generator.create(input_shape=1, num_neurons=100, num_layers=4)
-    trainer = trainer_obj(model, opts, "laplace", dataset="toy", learning_rate=5e-3 , save_files=False)
+    trainer = trainer_obj(model, opts, "laplace", dataset="toy", learning_rate=5e-3 , save_files=True)
     print (x_train.shape)
     model, rmse, nll = trainer.train(x_train, y_train, x_train, y_train, np.array([[1.]]), iters=iterations, batch_size=batch_size, verbose=True)
     return plot_laplace(model, x_test, os.path.join(save_fig_dir,"laplace_4_layers_100_neurons"))
@@ -246,7 +246,7 @@ def gaussian_4_layers_100_neurons(x_train, y_train, x_test): #This function will
     trainer_obj = trainers.Likelihood
     model_generator = models.get_correct_model(dataset="toy", trainer=trainer_obj)
     model, opts = model_generator.create(input_shape=1, num_neurons=100, num_layers=4)
-    trainer = trainer_obj(model, opts, "gaussian", dataset="toy",learning_rate=5e-3, save_files=False)
+    trainer = trainer_obj(model, opts, "gaussian", dataset="toy",learning_rate=5e-3, save_files=True)
     print (x_train.shape)
     model, rmse, nll = trainer.train(x_train, y_train, x_train, y_train, np.array([[1.]]), iters=iterations, batch_size=batch_size, verbose=True)
     return plot_gaussian(model, x_test, os.path.join(save_fig_dir,"gaussian_4_layers_100_neurons"))
@@ -304,7 +304,7 @@ def emperical_breakaway_point():
     method_names = ['Ensemble','Gaussian','Evidential','Laplace']
 
     df_pred = pd.DataFrame(columns=["Method", "noise", "RMSE", "Interval Score", "X", "Y", "Mu", "Sigma", "GT_Sigma"])
-    for j in range(3):
+    for j in range(1):
         x_train_first, y_train_first, sigma_train = data_loader.synthetic_sine_heteroscedastic(n_points=1000)
         x_train_first = x_train_first.reshape(-1,1); y_train_first=y_train_first.reshape(-1,1)
         x_test, y_test, sigma_test = data_loader.synthetic_sine_heteroscedastic(n_points=1000, noise=False)
