@@ -1,8 +1,54 @@
 # Robust Maximum Likelihood Uncertainty Estimation for Deep Regression
 *SafeAI 2022(at AAAI-22) Submission*
 
-This repository contains the code to reproduce all results presented in the SafeAI submission: "Maximum Likelihood Uncertainty Estimation: Robustness to Outliers".
+## Abstract
+We benchmark the robustness of maximum likelihood based
+uncertainty estimation methods to outliers in training data for
+regression tasks. Outliers or noisy labels in training data re-
+sults in degraded performances as well as incorrect estima-
+tion of uncertainty. We propose the use of a heavy-tailed dis-
+tribution (Laplace distribution) to improve the robustness to
+outliers. This property is evaluated using standard regression
+benchmarks and on a high-dimensional regression task of
+monocular depth estimation, both containing outliers. In par-
+ticular, heavy-tailed distribution based maximum likelihood
+provides better uncertainty estimates, better separation in un-
+certainty for out-of-distribution data, as well as better detec-
+tion of adversarial attacks in the presence of outliers
 
+
+
+## Laplace NLL Loss function 
+```
+def laplace_nll_loss(input, target, scale, eps=1e-06, reduction='mean'):
+    '''
+    laplace loss nll
+    '''
+    ax = list(range(1, len(target.shape)))
+    
+    #check validity of reduction mode
+    if reduction !='none' and reduction != 'mean' and reduction != 'sum':
+        raise ValueError(reduction + "is not valid" )
+
+    #Entries of scale must be non negative
+    #tf.debugging.assert_non_negative(
+    #    scale, message="variance has negative numbers", summarize="have you missed to make variance positive with softplus", name=None  
+    #)
+
+    per_pixel_loss = (tf.math.log(2*scale) + tf.abs(input - target)/scale)
+    loss = tf.reduce_mean(per_pixel_loss, axis=ax)
+
+    #Apply reduction
+    if reduction == 'mean':
+        return tf.reduce_mean(loss)
+    elif reduction == 'sum':
+        return tf.reduce_sum(loss)
+    else:
+        return loss
+ ```
+
+
+This repository contains the code to reproduce all results presented in the SafeAI submission: "Maximum Likelihood Uncertainty Estimation: Robustness to Outliers".
 ## The repository is an extension to the code submitted by "Deep Evidential Regression" paper in Neurips 2021. 
 
 
