@@ -1,5 +1,5 @@
 #Folders
-figs/*
+#figs/*
 logs/*
 save/*
 preprocess/data/*
