@@ -1,8 +1,10 @@
 # Robust Maximum Likelihood Uncertainty Estimation for Deep Regression
 *SafeAI 2022(at AAAI-22) Submission*
-<a href="http://www.youtube.com/watch?feature=player_embedded&v=Di7zFfocAvU" target="_blank">
- <img src="http://img.youtube.com/vi/Di7zFfocAvU/mqdefault.jpg" alt="Watch the video" width="240" height="180" border="10" />
-</a>
+
+ <iframe width=”1280″ height=”720″ src=”https://www.youtube-nocookie.com/embed/Di7zFfocAvU?start=33&end=35;rel=0&amp;showinfo=0″ frameborder=”0″ allowfullscreen></iframe>
+ 
+[![Watch the video](https://img.youtube.com/vi/Di7zFfocAvU/default.jpg)](https://youtu.be/Di7zFfocAvU)
+
 
 ## Abstract
 We benchmark the robustness of maximum likelihood based
