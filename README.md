@@ -8,17 +8,17 @@
 ## Abstract
 We benchmark the robustness of maximum likelihood based
 uncertainty estimation methods to outliers in training data for
-regression tasks. Outliers or noisy labels in training data re-
-sults in degraded performances as well as incorrect estima-
-tion of uncertainty. We propose the use of a heavy-tailed dis-
-tribution (Laplace distribution) to improve the robustness to
+regression tasks. Outliers or noisy labels in training data results in 
+degraded performances as well as incorrect estimation of uncertainty. 
+We propose the use of a heavy-tailed distribution (Laplace distribution) 
+to improve the robustness to
 outliers. This property is evaluated using standard regression
 benchmarks and on a high-dimensional regression task of
-monocular depth estimation, both containing outliers. In par-
-ticular, heavy-tailed distribution based maximum likelihood
-provides better uncertainty estimates, better separation in un-
-certainty for out-of-distribution data, as well as better detec-
-tion of adversarial attacks in the presence of outliers
+monocular depth estimation, both containing outliers. In particular, 
+heavy-tailed distribution based maximum likelihood
+provides better uncertainty estimates, better separation in uncertainty 
+for out-of-distribution data, as well as better detection of 
+adversarial attacks in the presence of outliers
 
 
 
