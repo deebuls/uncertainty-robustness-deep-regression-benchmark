@@ -172,7 +172,7 @@ def plot_bbbp(model, x_test, save="bbbp", ext=".pdf"):
 def evidence_reg_2_layers_50_neurons():
     trainer_obj = trainers.Evidential
     model_generator = models.get_correct_model(dataset="toy", trainer=trainer_obj)
-    model, opts = model_generator.create(input_shape=1, num_neurons=50, num_layers=2)
+    model, opts = model_generator.create(input_shape=(1,), num_neurons=50, num_layers=2)
     trainer = trainer_obj(model, opts, dataset="toy", learning_rate=5e-3, lam=1e-2, maxi_rate=0.)
     model, rmse, nll = trainer.train(x_train, y_train, x_train, y_train, np.array([[1.]]), iters=iterations, batch_size=batch_size, verbose=True)
     plot_ng(model, os.path.join(save_fig_dir,"evidence_reg_2_layer_50_neurons"))
@@ -180,7 +180,7 @@ def evidence_reg_2_layers_50_neurons():
 def evidence_reg_2_layers_100_neurons():
     trainer_obj = trainers.Evidential
     model_generator = models.get_correct_model(dataset="toy", trainer=trainer_obj)
-    model, opts = model_generator.create(input_shape=1, num_neurons=100, num_layers=2)
+    model, opts = model_generator.create(input_shape=(1,), num_neurons=100, num_layers=2)
     trainer = trainer_obj(model, opts, dataset="toy", learning_rate=5e-3, lam=1e-2, maxi_rate=0.)
     model, rmse, nll = trainer.train(x_train, y_train, x_train, y_train, np.array([[1.]]), iters=iterations, batch_size=batch_size, verbose=True)
     plot_ng(model, os.path.join(save_fig_dir,"evidence_reg_2_layers_100_neurons"))
@@ -188,7 +188,7 @@ def evidence_reg_2_layers_100_neurons():
 def evidence_reg_4_layers_50_neurons():
     trainer_obj = trainers.Evidential
     model_generator = models.get_correct_model(dataset="toy", trainer=trainer_obj)
-    model, opts = model_generator.create(input_shape=1, num_neurons=50, num_layers=4)
+    model, opts = model_generator.create(input_shape=(1,), num_neurons=50, num_layers=4)
     trainer = trainer_obj(model, opts, dataset="toy", learning_rate=5e-3, lam=1e-2, maxi_rate=0.)
     model, rmse, nll = trainer.train(x_train, y_train, x_train, y_train, np.array([[1.]]), iters=iterations, batch_size=batch_size, verbose=True)
     plot_ng(model, os.path.join(save_fig_dir,"evidence_reg_4_layers_50_neurons"))
@@ -196,7 +196,7 @@ def evidence_reg_4_layers_50_neurons():
 def evidence_reg_4_layers_100_neurons( x_train, y_train, x_test, lam=1e-2,):
     trainer_obj = trainers.Evidential
     model_generator = models.get_correct_model(dataset="toy", trainer=trainer_obj)
-    model, opts = model_generator.create(input_shape=1, num_neurons=100, num_layers=4)
+    model, opts = model_generator.create(input_shape=(1,), num_neurons=100, num_layers=4)
     trainer = trainer_obj(model, opts, dataset="toy", learning_rate=5e-3, lam=lam, maxi_rate=0., save_files=False)
     model, rmse, nll = trainer.train(x_train, y_train, x_train, y_train, np.array([[1.]]), iters=iterations, batch_size=batch_size, verbose=True)
     return plot_ng(model, x_test, os.path.join(save_fig_dir,"evidence_reg_4_layers_100_neurons"))
@@ -204,7 +204,7 @@ def evidence_reg_4_layers_100_neurons( x_train, y_train, x_test, lam=1e-2,):
 def evidence_noreg_4_layers_50_neurons():
     trainer_obj = trainers.Evidential
     model_generator = models.get_correct_model(dataset="toy", trainer=trainer_obj)
-    model, opts = model_generator.create(input_shape=1, num_neurons=50, num_layers=4)
+    model, opts = model_generator.create(input_shape=(1,), num_neurons=50, num_layers=4)
     trainer = trainer_obj(model, opts, dataset="toy", learning_rate=5e-3, lam=0., maxi_rate=0.)
     model, rmse, nll = trainer.train(x_train, y_train, x_train, y_train, np.array([[1.]]), iters=iterations, batch_size=batch_size, verbose=True)
     plot_ng(model, os.path.join(save_fig_dir,"evidence_noreg_4_layers_50_neurons"))
@@ -212,7 +212,7 @@ def evidence_noreg_4_layers_50_neurons():
 def evidence_noreg_4_layers_100_neurons():
     trainer_obj = trainers.Evidential
     model_generator = models.get_correct_model(dataset="toy", trainer=trainer_obj)
-    model, opts = model_generator.create(input_shape=1, num_neurons=100, num_layers=4)
+    model, opts = model_generator.create(input_shape=(1,), num_neurons=100, num_layers=4)
     trainer = trainer_obj(model, opts, dataset="toy", learning_rate=5e-3, lam=0., maxi_rate=0.)
     model, rmse, nll = trainer.train(x_train, y_train, x_train, y_train, np.array([[1.]]), iters=iterations, batch_size=batch_size, verbose=True)
     plot_ng(model, os.path.join(save_fig_dir,"evidence_noreg_4_layers_100_neurons"))
@@ -220,7 +220,7 @@ def evidence_noreg_4_layers_100_neurons():
 def ensemble_4_layers_100_neurons(x_train, y_train, x_test):
     trainer_obj = trainers.Ensemble
     model_generator = models.get_correct_model(dataset="toy", trainer=trainer_obj)
-    model, opts = model_generator.create(input_shape=1, num_neurons=100, num_layers=4)
+    model, opts = model_generator.create(input_shape=(1,), num_neurons=100, num_layers=4)
     trainer = trainer_obj(model, opts, dataset="toy", learning_rate=5e-3, save_files=False)
     model, rmse, nll = trainer.train(x_train, y_train, x_train, y_train, np.array([[1.]]), iters=iterations, batch_size=batch_size, verbose=True)
     return plot_ensemble(model, x_test, os.path.join(save_fig_dir,"ensemble_4_layers_100_neurons"))
@@ -228,7 +228,7 @@ def ensemble_4_layers_100_neurons(x_train, y_train, x_test):
 def laplace_ensemble_4_layers_100_neurons(): #This function will not work because trainer chagnes
     trainer_obj = trainers.Likelihood
     model_generator = models.get_correct_model(dataset="toy", trainer=trainer_obj)
-    model, opts = model_generator.create(input_shape=1, num_neurons=100, num_layers=4)
+    model, opts = model_generator.create(input_shape=(1,), num_neurons=100, num_layers=4)
     trainer = trainer_obj(model, opts, "laplace", dataset="toy", learning_rate=5e-3)
     model, rmse, nll = trainer.train(x_train, y_train, x_train, y_train, np.array([[1.]]), iters=iterations, batch_size=batch_size, verbose=True)
     plot_laplace_likelihood_ensemble(model, os.path.join(save_fig_dir,"likelihood_4_layers_100_neurons"))
@@ -236,7 +236,7 @@ def laplace_ensemble_4_layers_100_neurons(): #This function will not work becaus
 def laplace_4_layers_100_neurons(x_train, y_train, x_test): 
     trainer_obj = trainers.Likelihood
     model_generator = models.get_correct_model(dataset="toy", trainer=trainer_obj)
-    model, opts = model_generator.create(input_shape=1, num_neurons=100, num_layers=4)
+    model, opts = model_generator.create(input_shape=(1,), num_neurons=100, num_layers=4)
     trainer = trainer_obj(model, opts, "laplace", dataset="toy", learning_rate=5e-3 , save_files=True)
     print (x_train.shape)
     model, rmse, nll = trainer.train(x_train, y_train, x_train, y_train, np.array([[1.]]), iters=iterations, batch_size=batch_size, verbose=True)
@@ -245,7 +245,7 @@ def laplace_4_layers_100_neurons(x_train, y_train, x_test):
 def gaussian_4_layers_100_neurons(x_train, y_train, x_test): #This function will not work because trainer chagnes
     trainer_obj = trainers.Likelihood
     model_generator = models.get_correct_model(dataset="toy", trainer=trainer_obj)
-    model, opts = model_generator.create(input_shape=1, num_neurons=100, num_layers=4)
+    model, opts = model_generator.create(input_shape=(1,), num_neurons=100, num_layers=4)
     trainer = trainer_obj(model, opts, "gaussian", dataset="toy",learning_rate=5e-3, save_files=True)
     print (x_train.shape)
     model, rmse, nll = trainer.train(x_train, y_train, x_train, y_train, np.array([[1.]]), iters=iterations, batch_size=batch_size, verbose=True)
@@ -254,7 +254,7 @@ def gaussian_4_layers_100_neurons(x_train, y_train, x_test): #This function will
 def gaussian_4_layers_100_neurons():
     trainer_obj = trainers.Gaussian
     model_generator = models.get_correct_model(dataset="toy", trainer=trainer_obj)
-    model, opts = model_generator.create(input_shape=1, num_neurons=100, num_layers=4)
+    model, opts = model_generator.create(input_shape=(1,), num_neurons=100, num_layers=4)
     trainer = trainer_obj(model, opts, learning_rate=5e-3)
     model, rmse, nll = trainer.train(x_train, y_train, x_train, y_train, np.array([[1.]]), iters=iterations, batch_size=batch_size, verbose=True)
     plot_gaussian(model, os.path.join(save_fig_dir,"gaussian_4_layers_100_neurons"))
@@ -263,7 +263,7 @@ def gaussian_4_layers_100_neurons():
 def dropout_4_layers_100_neurons(x_train, y_train, x_test):
     trainer_obj = trainers.Dropout
     model_generator = models.get_correct_model(dataset="toy", trainer=trainer_obj)
-    model, opts = model_generator.create(input_shape=1, num_neurons=100, num_layers=4, sigma=True)
+    model, opts = model_generator.create(input_shape=(1,), num_neurons=100, num_layers=4, sigma=True)
     trainer = trainer_obj(model, opts, dataset="toy", learning_rate=5e-3, save_files=False)
     model, rmse, nll = trainer.train(x_train, y_train, x_train, y_train, np.array([[1.]]), iters=iterations, batch_size=batch_size, verbose=True)
     return plot_dropout(model, x_test, os.path.join(save_fig_dir,"dropout_4_layers_100_neurons"))
@@ -271,7 +271,7 @@ def dropout_4_layers_100_neurons(x_train, y_train, x_test):
 def bbbp_4_layers_100_neurons(x_train, y_train, x_test):
     trainer_obj = trainers.BBBP
     model_generator = models.get_correct_model(dataset="toy", trainer=trainer_obj)
-    model, opts = model_generator.create(input_shape=1, num_neurons=100, num_layers=4)
+    model, opts = model_generator.create(input_shape=(1,), num_neurons=100, num_layers=4)
     trainer = trainer_obj(model, opts, dataset="toy", learning_rate=1e-3)
     model, rmse, nll = trainer.train(x_train, y_train, x_train, y_train, np.array([[1.]]), iters=iterations, batch_size=batch_size, verbose=True)
     plot_bbbp(model, x_test, os.path.join(save_fig_dir,"bbbp_4_layers_100_neurons"))
@@ -329,7 +329,7 @@ def emperical_breakaway_point():
                 sigma_train = np.squeeze(sigma_train)
                 summary = [{"run":j,"Method":method_name, "noise":noise, "RMSE":r, "Interval Score":i ,
                             "X":x, "Y":y, "Mu":m, "Sigma":s, "GT_Sigma":st} for r,i,x,y,m,s,st in zip(rmse, interval_score, x_test, y_test, mu, sigma, sigma_train)]
-                df_pred = df_pred.append(summary, ignore_index=True)
+                df_pred = df_pred._append(summary, ignore_index=True)
 
                 print (df_pred.head())
                 tf.keras.backend.clear_session()
@@ -361,9 +361,10 @@ def plot_breakaway_point(df_pred):
     g = sns.pointplot(x="Noise %", y="RMSE", hue="Method", 
                       markers=["o", "x", "*", "D"],
                       linestyles=["-","--","-.",":"],
-                       data=df_pred, legend=False)
+                       data=df_pred)
     #g.legend(bbox_to_anchor=(0.8, 1.2 ), loc='upper center', ncol=5, fontsize=5, fancybox=True, shadow=True) 
     g.get_legend().remove()
+    
     # manipulate x tick labels to add percentage
     vals = g.get_xticks()
     print ("vals : ", vals)
@@ -375,7 +376,7 @@ def plot_breakaway_point(df_pred):
     g = sns.pointplot(x="Noise %", y="Interval Score", hue="Method", 
                       markers=["o", "x", "*", "D"],
                       linestyles=["-","--","-.",":"],
-                       data=df_pred, legend=False)
+                       data=df_pred)
     g.set(yscale="log")
     # manipulate x tick labels to add percentage
     vals = g.get_xticks()
