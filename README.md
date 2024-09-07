@@ -4,6 +4,7 @@
 
 [![Watch the video](https://img.youtube.com/vi/Di7zFfocAvU/default.jpg)](https://www.youtube-nocookie.com/embed/Di7zFfocAvU?start=2034&end=2735;rel=0&amp;showinfo=0)
 
+[Link of Paper]( https://ceur-ws.org/Vol-3087/paper_20.pdf)
 
 ## Abstract
 We benchmark the robustness of maximum likelihood based
